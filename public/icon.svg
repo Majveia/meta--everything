@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="108" fill="#0A0A0A"/>
+  <g transform="translate(256,256)">
+    <circle cx="0" cy="0" r="80" fill="none" stroke="#BF5A3C" stroke-width="12"/>
+    <circle cx="0" cy="0" r="140" fill="none" stroke="#BF5A3C" stroke-width="4" opacity="0.4"/>
+    <circle cx="80" cy="0" r="10" fill="#BF5A3C"/>
+    <circle cx="-40" cy="69" r="8" fill="#BF5A3C" opacity="0.7"/>
+    <circle cx="-40" cy="-69" r="8" fill="#BF5A3C" opacity="0.7"/>
+  </g>
+  <text x="256" y="390" text-anchor="middle" font-family="Georgia,serif" font-size="72" fill="#E8E0D4" letter-spacing="-3">m//e</text>
+</svg>
