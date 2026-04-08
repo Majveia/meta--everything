@@ -1,6 +1,10 @@
 import { NextRequest } from 'next/server';
 import { fetchAllContent } from '@/lib/fetchers';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { validateEnv } from '@/lib/env';
+
+// Validate env config once on first request
+validateEnv();
 
 export async function GET(req: NextRequest) {
   const ip = getClientIp(req.headers);
