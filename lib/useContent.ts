@@ -22,7 +22,7 @@ let cachedSources: PlatformSources | null = null;
 let lastFetchTime = 0;
 const STALE_TIME = 60_000; // 1 minute
 
-function mergeContent(apiItems: ContentItem[]): {
+export function mergeContent(apiItems: ContentItem[]): {
   allItems: ContentItem[];
   fyItems: ContentItem[];
   flItems: ContentItem[];
