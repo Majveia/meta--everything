@@ -127,7 +127,8 @@ export default function SwipeableFeed({ onTap, onLongPress }: SwipeableFeedProps
   const hiddenItems = useStore((s) => s.hiddenItems);
   const strategyVersion = useStore((s) => s.strategyVersion);
   const bumpStrategy = useStore((s) => s.bumpStrategy);
-  const { fyItems, flItems, allItems, refresh: refreshContent, lastFetchTime, sources } = useContentData();
+  const { fyItems, flItems, allItems, refresh: refreshContent, lastFetchTime, sources, fetchError } = useContentData();
+  const addToast = useStore((s) => s.addToast);
 
   // Harness pipeline: collect → evaluate → present
   const { fy, fl, insights } = useMemo(() => {
@@ -142,6 +143,10 @@ export default function SwipeableFeed({ onTap, onLongPress }: SwipeableFeedProps
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strategyVersion, likedItems.size, bookmarkedItems.size, hiddenItems.size, fyItems, flItems]);
+
+  useEffect(() => {
+    if (fetchError) addToast('Live data unavailable — showing sample content');
+  }, [fetchError, addToast]);
 
   const updateLastVisit = useStore((s) => s.updateLastVisit);
 
