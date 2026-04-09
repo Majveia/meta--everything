@@ -96,11 +96,4 @@ export const mockFyItems = fyIdx.map((i) => allContent[i]);
 export const mockFlItems = flIdx.map((i) => allContent[i]);
 export const mockExItems = exIdx.map((i) => allContent[i]);
 
-export const notifications: Notification[] = [
-  { id: 'n1', icon: '🔴', text: 'Stable Ronaldo just went live on Twitch', app: 'Twitch', time: '2m', accent: '#9146FF', read: false },
-  { id: 'n2', icon: '▶️', text: '3Blue1Brown uploaded: Visualizing Higher Dimensions', app: 'YouTube', time: '2h', accent: '#FF0000', read: false },
-  { id: 'n3', icon: '🔥', text: 'Your thread reached 47 likes', app: 'X', time: '3h', accent: '#8B8580', read: false },
-  { id: 'n4', icon: '💬', text: 'Andrej Karpathy replied to a thread you follow', app: 'X', time: '38m', accent: '#8B8580', read: false },
-  { id: 'n5', icon: '📰', text: 'New from Dwarkesh Patel: The Physics of Intelligence', app: 'Substack', time: '4h', accent: '#E8A849', read: true },
-  { id: 'n6', icon: '🟢', text: 'CodeWithFire is streaming: Late Night Code Session', app: 'Kick', time: '15m', accent: '#53FC18', read: true },
-];
+// Notifications are now generated dynamically from content — see lib/notifications.ts

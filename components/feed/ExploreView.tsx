@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStore } from '@/lib/store';
 import { E } from '@/lib/constants';
 import { type ContentItem } from '@/lib/content';
@@ -11,27 +11,67 @@ import LiveCard from './LiveCard';
 import StdCard from './StdCard';
 import CompactCard from './CompactCard';
 
+/** Parse metric strings like "1.2M", "420K" into numbers */
+function parseMetric(s?: string): number {
+  if (!s) return 0;
+  const clean = s.replace(/,/g, '').trim();
+  if (clean.endsWith('M')) return parseFloat(clean) * 1_000_000;
+  if (clean.endsWith('K')) return parseFloat(clean) * 1_000;
+  return parseFloat(clean) || 0;
+}
+
+/** Parse relative time strings like "2h", "38m", "2d" into minutes */
+function parseTime(s?: string): number {
+  if (!s) return 0;
+  const n = parseFloat(s);
+  if (s.endsWith('d')) return n * 1440;
+  if (s.endsWith('h')) return n * 60;
+  if (s.endsWith('m')) return n;
+  return 0;
+}
+
+/** Composite trending score — engagement + recency + live boost */
+function trendingScore(item: ContentItem): number {
+  const views = parseMetric(item.views);
+  const likes = parseMetric(item.likes);
+  const comments = parseMetric(item.comments);
+  const ageMinutes = parseTime(item.time) || 60;
+  const recencyBoost = Math.max(0, 1 - ageMinutes / 2880); // decays over 48h
+  const liveBoost = item.isLive || item.type === 'live' ? 1.5 : 1;
+  return (views * 0.5 + likes * 3 + comments * 5) * recencyBoost * liveBoost;
+}
+
 interface ExploreViewProps {
   onTap: (item: ContentItem) => void;
+  onPlay?: (item: ContentItem) => void;
   onLongPress?: (item: ContentItem, x: number, y: number) => void;
 }
 
-function renderCard(item: ContentItem, onTap: (item: ContentItem) => void, onLongPress?: (item: ContentItem, x: number, y: number) => void) {
-  if (item.type === 'live') return <LiveCard key={item.id} item={item} onTap={onTap} onLongPress={onLongPress} />;
+function renderCard(item: ContentItem, onTap: (item: ContentItem) => void, onPlay?: (item: ContentItem) => void, onLongPress?: (item: ContentItem, x: number, y: number) => void) {
+  if (item.type === 'live') return <LiveCard key={item.id} item={item} onTap={onTap} onPlay={onPlay} onLongPress={onLongPress} />;
   if (item.type === 'compact') return <CompactCard key={item.id} item={item} onTap={onTap} onLongPress={onLongPress} />;
-  return <StdCard key={item.id} item={item} onTap={onTap} onLongPress={onLongPress} />;
+  return <StdCard key={item.id} item={item} onTap={onTap} onPlay={onPlay} onLongPress={onLongPress} />;
 }
 
-export default function ExploreView({ onTap, onLongPress }: ExploreViewProps) {
+export default function ExploreView({ onTap, onPlay, onLongPress }: ExploreViewProps) {
   const p = useStore((s) => s.p);
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
-  const { exItems, allItems } = useContentData();
+  const { allItems } = useContentData();
   const topics = ['All', 'AI', 'Science', 'Coding', 'Gaming', 'Startups', 'Philosophy', 'Design', 'Music', 'Culture'];
-  // Explore = no Substacks, YouTube trending focus
-  const explorePool = exItems.filter((c) => c.platform !== 'substack');
+
+  // Dynamically rank all items by trending score instead of using a static pool
+  const trendingPool = useMemo(() => {
+    return allItems
+      .filter((c) => c.platform !== 'substack')
+      .sort((a, b) => trendingScore(b) - trendingScore(a))
+      .slice(0, 20);
+  }, [allItems]);
+
   const filtered = activeTopic
-    ? allItems.filter((c) => c.platform !== 'substack' && c.tags && c.tags.includes(activeTopic.toLowerCase()))
-    : explorePool;
+    ? allItems
+        .filter((c) => c.platform !== 'substack' && c.tags && c.tags.includes(activeTopic.toLowerCase()))
+        .sort((a, b) => trendingScore(b) - trendingScore(a))
+    : trendingPool;
 
   const gridStyle: React.CSSProperties = {
     display: 'grid',
@@ -77,7 +117,7 @@ export default function ExploreView({ onTap, onLongPress }: ExploreViewProps) {
       )}
 
       <TopicChips topics={topics} active={activeTopic} onSelect={setActiveTopic} />
-      <SectionLabel label={activeTopic ? 'Results' : 'All Content'} />
+      <SectionLabel label={activeTopic ? 'Results' : 'Trending Now'} />
       {filtered.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', gap: 14 }}>
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={p.txF} strokeWidth="1.5" strokeLinecap="round">
@@ -93,7 +133,7 @@ export default function ExploreView({ onTap, onLongPress }: ExploreViewProps) {
         </div>
       ) : (
         <div style={gridStyle}>
-          {filtered.map((f, i) => renderCard({ ...f, delay: i * 80 }, onTap, onLongPress))}
+          {filtered.map((f, i) => renderCard({ ...f, delay: i * 80 }, onTap, onPlay, onLongPress))}
         </div>
       )}
     </div>
