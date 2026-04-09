@@ -14,6 +14,7 @@ export interface ContentState {
   sources: PlatformSources;
   refresh: () => void;
   lastFetchTime: number;
+  fetchError: string | null;
 }
 
 // Module-level cache to avoid re-fetching across re-renders
@@ -82,6 +83,7 @@ export function useContent(): ContentState {
     { youtube: 'unconfigured', twitch: 'unconfigured', x: 'unconfigured', substack: 'unconfigured', kick: 'unconfigured' }
   );
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const fetchingRef = useRef(false);
 
   const doFetch = useCallback(async (force = false) => {
@@ -89,8 +91,9 @@ export function useContent(): ContentState {
     if (!force && cachedItems && Date.now() - lastFetchTime < STALE_TIME) return;
 
     fetchingRef.current = true;
+    setFetchError(null);
     try {
-      const res = await fetch('/api/content');
+      const res = await fetch('/api/content', { signal: AbortSignal.timeout(12000) });
       if (!res.ok) throw new Error(`API ${res.status}`);
       const json = await res.json();
       cachedItems = json.items || [];
@@ -99,8 +102,9 @@ export function useContent(): ContentState {
       setItems(cachedItems!);
       setSources(cachedSources!);
     } catch (e) {
-      console.warn('[useContent] fetch failed, using mock data:', e);
-      // Keep existing cached data or fall back to empty (mock will fill in via mergeContent)
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      console.warn('[useContent] fetch failed, using mock data:', msg);
+      setFetchError(msg);
     } finally {
       setLoading(false);
       fetchingRef.current = false;
@@ -134,5 +138,6 @@ export function useContent(): ContentState {
     sources,
     refresh,
     lastFetchTime,
+    fetchError,
   };
 }

@@ -2,6 +2,7 @@
 
 import { useStore } from '@/lib/store';
 import { E, accentColors } from '@/lib/constants';
+import { playTab } from '@/lib/sounds';
 
 type NavTab = 'home' | 'explore' | 'activity' | 'profile';
 
@@ -13,6 +14,8 @@ interface BottomNavProps {
 export default function BottomNav({ active, onChange }: BottomNavProps) {
   const p = useStore((s) => s.p);
   const unreadCount = useStore((s) => s.unreadActivityCount);
+  const hapticEnabled = useStore((s) => s.hapticEnabled);
+  const soundEnabled = useStore((s) => s.soundEnabled);
 
   const items: { id: NavTab; label: string; icon: (a: boolean) => React.ReactNode }[] = [
     {
@@ -90,7 +93,13 @@ export default function BottomNav({ active, onChange }: BottomNavProps) {
               role="tab"
               aria-selected={a}
               aria-label={it.label}
-              onClick={() => onChange(it.id)}
+              onClick={() => {
+                if (active !== it.id) {
+                  if (hapticEnabled) navigator.vibrate?.(6);
+                  if (soundEnabled) playTab();
+                }
+                onChange(it.id);
+              }}
               style={{
                 background: 'none',
                 border: 'none',

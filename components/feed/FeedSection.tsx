@@ -3,11 +3,14 @@
 import { useStore } from '@/lib/store';
 import { useScrollPastTracker } from '@/lib/traces';
 import { parseRelativeTimeMs } from '@/lib/constants';
+import { useRef, useState, useEffect } from 'react';
 import SectionLabel from './SectionLabel';
 import LiveCard from './LiveCard';
 import StdCard from './StdCard';
 import CompactCard from './CompactCard';
 import type { ContentItem } from '@/lib/content';
+
+const PAGE_SIZE = 12;
 
 interface FeedSectionProps {
   items: ContentItem[];
@@ -64,15 +67,35 @@ export default function FeedSection({ items, onTap, onPlay, onLongPress }: FeedS
   const hiddenItems = useStore((s) => s.hiddenItems);
   const toggleHidden = useStore((s) => s.toggleHidden);
   const lastVisit = useStore((s) => s.lastVisitTimestamp);
-  const visible = withTypeDelay(items.filter((i) => !hiddenItems.has(i.id)));
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Reset pagination when item list changes (tab switch / refresh)
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [items]);
+
+  // Observe sentinel — load next page when it enters viewport
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisibleCount((c) => c + PAGE_SIZE); },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const allVisible = withTypeDelay(items.filter((i) => !hiddenItems.has(i.id)));
+  const visible = allVisible.slice(0, visibleCount);
+  const hasMore = visibleCount < allVisible.length;
   const live = visible.filter((i) => i.type === 'live');
   const recent = visible.filter((i) => i.type !== 'live' && i.time && !i.time.includes('d') && parseInt(i.time) < 7);
   const earlier = visible.filter((i) => !live.includes(i) && !recent.includes(i));
 
-  // Count items newer than last visit
+  // Count items newer than last visit (from full set, not paginated slice)
   const msSinceLastVisit = lastVisit > 0 ? Date.now() - lastVisit : 0;
   const newCount = lastVisit > 0
-    ? visible.filter((i) => parseRelativeTimeMs(i.time) < msSinceLastVisit).length
+    ? allVisible.filter((i) => parseRelativeTimeMs(i.time) < msSinceLastVisit).length
     : 0;
 
   const gridStyle: React.CSSProperties = {
@@ -81,7 +104,7 @@ export default function FeedSection({ items, onTap, onPlay, onLongPress }: FeedS
     gap: 'var(--grid-gap, 14px)',
   };
 
-  if (visible.length === 0) {
+  if (allVisible.length === 0) {
     const hiddenCount = items.filter((i) => hiddenItems.has(i.id)).length;
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 20px', textAlign: 'center' }}>
@@ -126,6 +149,14 @@ export default function FeedSection({ items, onTap, onPlay, onLongPress }: FeedS
           <SectionLabel label="Earlier" />
           <div style={gridStyle}>{earlier.map((f) => renderCard(f, onTap, onPlay, onLongPress))}</div>
         </>
+      )}
+
+      {/* Infinite scroll sentinel */}
+      <div ref={sentinelRef} style={{ height: 1 }} />
+      {hasMore && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0 8px' }}>
+          <div style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${p.tc}`, borderTopColor: 'transparent', animation: 'ptr-spin .7s linear infinite', opacity: 0.5 }} />
+        </div>
       )}
     </div>
   );

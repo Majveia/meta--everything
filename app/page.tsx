@@ -1,13 +1,15 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { ContentProvider } from '@/lib/ContentProvider';
 import Shell from '@/components/layout/Shell';
 import SwipeableFeed from '@/components/feed/SwipeableFeed';
-import ExploreView from '@/components/feed/ExploreView';
-import ActivityView from '@/components/feed/ActivityView';
-import ProfileView from '@/components/feed/ProfileView';
-import SavedView from '@/components/feed/SavedView';
-import StatsView from '@/components/feed/StatsView';
+
+const ExploreView = dynamic(() => import('@/components/feed/ExploreView'));
+const ActivityView = dynamic(() => import('@/components/feed/ActivityView'));
+const ProfileView = dynamic(() => import('@/components/feed/ProfileView'));
+const SavedView = dynamic(() => import('@/components/feed/SavedView'));
+const StatsView = dynamic(() => import('@/components/feed/StatsView'));
 
 export default function Home() {
   return (

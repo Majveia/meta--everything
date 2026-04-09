@@ -13,6 +13,7 @@ const defaultState: ContentState = {
   sources: { youtube: 'unconfigured', twitch: 'unconfigured', x: 'unconfigured', substack: 'unconfigured', kick: 'unconfigured' },
   refresh: () => {},
   lastFetchTime: 0,
+  fetchError: null,
 };
 
 const ContentContext = createContext<ContentState>(defaultState);
