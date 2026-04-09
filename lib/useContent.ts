@@ -22,19 +22,29 @@ let cachedSources: PlatformSources | null = null;
 let lastFetchTime = 0;
 const STALE_TIME = 60_000; // 1 minute
 
-function mergeContent(apiItems: ContentItem[]): {
+function mergeContent(apiItems: ContentItem[], sources?: PlatformSources): {
   allItems: ContentItem[];
   fyItems: ContentItem[];
   flItems: ContentItem[];
   exItems: ContentItem[];
 } {
+  // Filter out mock X posts when the X API isn't connected
+  const xUnconfigured = !sources || sources.x === 'unconfigured';
+  const stripMockX = (items: ContentItem[]) =>
+    xUnconfigured ? items.filter((i) => i.platform !== 'x') : items;
+
   if (apiItems.length === 0) {
-    return { allItems: allContent, fyItems: mockFyItems, flItems: mockFlItems, exItems: mockExItems };
+    return {
+      allItems: stripMockX(allContent),
+      fyItems: stripMockX(mockFyItems),
+      flItems: stripMockX(mockFlItems),
+      exItems: stripMockX(mockExItems),
+    };
   }
 
   // Dedup: API items take priority (prefixed IDs won't collide with mock '0'-'31')
   const idSet = new Set(apiItems.map((i) => i.id));
-  const mockFiltered = allContent.filter((i) => !idSet.has(i.id));
+  const mockFiltered = stripMockX(allContent.filter((i) => !idSet.has(i.id)));
   const merged = [...apiItems, ...mockFiltered];
 
   // Split API items into pools by type
@@ -58,9 +68,9 @@ function mergeContent(apiItems: ContentItem[]): {
 
   return {
     allItems: merged,
-    fyItems: fillPool(fyPool, mockFyItems, 8),
-    flItems: fillPool(flPool, mockFlItems, 8),
-    exItems: fillPool(exPool, mockExItems, 8),
+    fyItems: fillPool(fyPool, stripMockX(mockFyItems), 8),
+    flItems: fillPool(flPool, stripMockX(mockFlItems), 8),
+    exItems: fillPool(exPool, stripMockX(mockExItems), 8),
   };
 }
 
@@ -103,9 +113,12 @@ export function useContent(): ContentState {
       setItems(cachedItems);
       setSources(cachedSources!);
       setLoading(false);
-      return;
+    } else {
+      doFetch();
     }
-    doFetch();
+    // Poll every 30s to keep feeds dynamic and constantly refreshing
+    const interval = setInterval(() => doFetch(true), 30_000);
+    return () => clearInterval(interval);
   }, [doFetch]);
 
   const refresh = useCallback(async () => {
@@ -113,7 +126,7 @@ export function useContent(): ContentState {
     await doFetch(true);
   }, [doFetch]);
 
-  const merged = mergeContent(items);
+  const merged = mergeContent(items, sources);
 
   return {
     ...merged,

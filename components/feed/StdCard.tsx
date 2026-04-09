@@ -14,12 +14,13 @@ import type { ContentItem } from '@/lib/content';
 interface StdCardProps {
   item: ContentItem;
   onTap: (item: ContentItem) => void;
+  onPlay?: (item: ContentItem) => void;
   onLongPress?: (item: ContentItem, x: number, y: number) => void;
 }
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-function StdCard({ item, onTap, onLongPress: onLP }: StdCardProps) {
+function StdCard({ item, onTap, onPlay, onLongPress: onLP }: StdCardProps) {
   const p = useStore((s) => s.p);
   const toggleLike = useStore((s) => s.toggleLike);
   const hapticEnabled = useStore((s) => s.hapticEnabled);
@@ -105,7 +106,7 @@ function StdCard({ item, onTap, onLongPress: onLP }: StdCardProps) {
       )}
 
       <div onClick={handleThumbTap} style={{ position: 'relative' }}>
-        <Thumbnail platform={item.platform} h={145} hover={hover} videoId={item.videoId} channelId={item.channelId} />
+        <Thumbnail platform={item.platform} h={145} hover={hover} videoId={item.videoId} channelId={item.channelId} onPlay={() => onPlay?.(item)} />
         <AnimatePresence>
           {heartPop && (
             <motion.div

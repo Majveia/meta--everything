@@ -39,9 +39,10 @@ interface ThumbnailProps {
   isLive?: boolean;
   videoId?: string;
   channelId?: string;
+  onPlay?: () => void;
 }
 
-export default function Thumbnail({ platform, h = 145, hover = false, isLive = false, videoId, channelId }: ThumbnailProps) {
+export default function Thumbnail({ platform, h = 145, hover = false, isLive = false, videoId, channelId, onPlay }: ThumbnailProps) {
   const p = useStore((s) => s.p);
   const ac = platformColors[platform];
   const containerRef = useRef<HTMLDivElement>(null);
@@ -183,7 +184,11 @@ export default function Thumbnail({ platform, h = 145, hover = false, isLive = f
       )}
       {/* Play button overlay */}
       {hasVideo && (
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: imgLoaded ? (hover ? 1 : 0.75) : 0, transition: 'opacity .3s ease', zIndex: 4 }}>
+        <div
+          onClick={(e) => { e.stopPropagation(); onPlay?.(); }}
+          role="button"
+          aria-label="Play"
+          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: imgLoaded ? (hover ? 1 : 0.75) : 0, transition: 'opacity .3s ease', zIndex: 4, cursor: 'pointer' }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
         </div>
       )}

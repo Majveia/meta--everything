@@ -14,12 +14,13 @@ import type { ContentItem } from '@/lib/content';
 interface LiveCardProps {
   item: ContentItem;
   onTap: (item: ContentItem) => void;
+  onPlay?: (item: ContentItem) => void;
   onLongPress?: (item: ContentItem, x: number, y: number) => void;
 }
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-function LiveCard({ item, onTap, onLongPress: onLP }: LiveCardProps) {
+function LiveCard({ item, onTap, onPlay, onLongPress: onLP }: LiveCardProps) {
   const p = useStore((s) => s.p);
   const toggleLike = useStore((s) => s.toggleLike);
   const hapticEnabled = useStore((s) => s.hapticEnabled);
@@ -99,7 +100,7 @@ function LiveCard({ item, onTap, onLongPress: onLP }: LiveCardProps) {
       )}
 
       <div onClick={handleThumbTap} style={{ position: 'relative' }}>
-        <Thumbnail platform={item.platform} h={195} hover={hover} isLive videoId={item.videoId} channelId={item.channelId} />
+        <Thumbnail platform={item.platform} h={195} hover={hover} isLive videoId={item.videoId} channelId={item.channelId} onPlay={() => onPlay?.(item)} />
         {/* Double-tap heart overlay */}
         <AnimatePresence>
           {heartPop && (
