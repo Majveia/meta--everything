@@ -15,16 +15,17 @@ const PAGE_SIZE = 12;
 interface FeedSectionProps {
   items: ContentItem[];
   onTap: (item: ContentItem) => void;
+  onPlay?: (item: ContentItem) => void;
   onLongPress?: (item: ContentItem, x: number, y: number) => void;
 }
 
-function TrackedCard({ item, onTap, onLongPress }: { item: ContentItem; onTap: (item: ContentItem) => void; onLongPress?: (item: ContentItem, x: number, y: number) => void }) {
+function TrackedCard({ item, onTap, onPlay, onLongPress }: { item: ContentItem; onTap: (item: ContentItem) => void; onPlay?: (item: ContentItem) => void; onLongPress?: (item: ContentItem, x: number, y: number) => void }) {
   const ref = useScrollPastTracker(item.id);
   const card = item.type === 'live'
-    ? <LiveCard item={item} onTap={onTap} onLongPress={onLongPress} />
+    ? <LiveCard item={item} onTap={onTap} onPlay={onPlay} onLongPress={onLongPress} />
     : item.type === 'compact'
     ? <CompactCard item={item} onTap={onTap} onLongPress={onLongPress} />
-    : <StdCard item={item} onTap={onTap} onLongPress={onLongPress} />;
+    : <StdCard item={item} onTap={onTap} onPlay={onPlay} onLongPress={onLongPress} />;
   return (
     <div ref={ref} style={item.type === 'live' ? { gridColumn: '1 / -1' } : undefined}>
       {card}
@@ -44,8 +45,8 @@ function withTypeDelay(items: ContentItem[]): ContentItem[] {
   });
 }
 
-function renderCard(item: ContentItem, onTap: (item: ContentItem) => void, onLongPress?: (item: ContentItem, x: number, y: number) => void) {
-  return <TrackedCard key={item.id} item={item} onTap={onTap} onLongPress={onLongPress} />;
+function renderCard(item: ContentItem, onTap: (item: ContentItem) => void, onPlay?: (item: ContentItem) => void, onLongPress?: (item: ContentItem, x: number, y: number) => void) {
+  return <TrackedCard key={item.id} item={item} onTap={onTap} onPlay={onPlay} onLongPress={onLongPress} />;
 }
 
 function NewSinceDivider({ count, color, accent }: { count: number; color: string; accent: string }) {
@@ -61,7 +62,7 @@ function NewSinceDivider({ count, color, accent }: { count: number; color: strin
   );
 }
 
-export default function FeedSection({ items, onTap, onLongPress }: FeedSectionProps) {
+export default function FeedSection({ items, onTap, onPlay, onLongPress }: FeedSectionProps) {
   const p = useStore((s) => s.p);
   const hiddenItems = useStore((s) => s.hiddenItems);
   const toggleHidden = useStore((s) => s.toggleHidden);
@@ -134,19 +135,19 @@ export default function FeedSection({ items, onTap, onLongPress }: FeedSectionPr
       {recent.length > 0 && (
         <>
           <SectionLabel label="Recent" />
-          <div style={gridStyle}>{recent.map((f) => renderCard(f, onTap, onLongPress))}</div>
+          <div style={gridStyle}>{recent.map((f) => renderCard(f, onTap, onPlay, onLongPress))}</div>
         </>
       )}
       {live.length > 0 && (
         <>
           <SectionLabel label="Live Now" live />
-          <div style={gridStyle}>{live.map((f) => renderCard(f, onTap, onLongPress))}</div>
+          <div style={gridStyle}>{live.map((f) => renderCard(f, onTap, onPlay, onLongPress))}</div>
         </>
       )}
       {earlier.length > 0 && (
         <>
           <SectionLabel label="Earlier" />
-          <div style={gridStyle}>{earlier.map((f) => renderCard(f, onTap, onLongPress))}</div>
+          <div style={gridStyle}>{earlier.map((f) => renderCard(f, onTap, onPlay, onLongPress))}</div>
         </>
       )}
 

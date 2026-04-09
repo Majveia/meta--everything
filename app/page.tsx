@@ -15,10 +15,10 @@ export default function Home() {
   return (
     <ContentProvider>
     <Shell>
-      {({ activeTab, onDetailOpen, onContextMenu, showSaved, showStats, onShowSaved, onShowStats, onBackFromSaved, onBackFromStats }) => (
+      {({ activeTab, onDetailOpen, onPlayOpen, onContextMenu, showSaved, showStats, onShowSaved, onShowStats, onBackFromSaved, onBackFromStats }) => (
         <>
-          {activeTab === 'home' && <SwipeableFeed onTap={onDetailOpen} onLongPress={onContextMenu} />}
-          {activeTab === 'explore' && <ExploreView onTap={onDetailOpen} onLongPress={onContextMenu} />}
+          {activeTab === 'home' && <SwipeableFeed onTap={onDetailOpen} onPlay={onPlayOpen} onLongPress={onContextMenu} />}
+          {activeTab === 'explore' && <ExploreView onTap={onDetailOpen} onPlay={onPlayOpen} onLongPress={onContextMenu} />}
           {activeTab === 'activity' && <ActivityView onDetailOpen={onDetailOpen} />}
           {activeTab === 'profile' && !showSaved && !showStats && <ProfileView onShowSaved={onShowSaved} onShowStats={onShowStats} />}
           {activeTab === 'profile' && showSaved && <SavedView onBack={onBackFromSaved} onDetailOpen={onDetailOpen} />}

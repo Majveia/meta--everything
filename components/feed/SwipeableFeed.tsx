@@ -15,10 +15,11 @@ import FollowingFeed from './FollowingFeed';
 
 interface SwipeableFeedProps {
   onTap: (item: ContentItem) => void;
+  onPlay?: (item: ContentItem) => void;
   onLongPress?: (item: ContentItem, x: number, y: number) => void;
 }
 
-export default function SwipeableFeed({ onTap, onLongPress }: SwipeableFeedProps) {
+export default function SwipeableFeed({ onTap, onPlay, onLongPress }: SwipeableFeedProps) {
   const p = useStore((s) => s.p);
   const [tab, setTab] = useState(0);
   const [dx, setDx] = useState(0);
@@ -296,7 +297,7 @@ export default function SwipeableFeed({ onTap, onLongPress }: SwipeableFeedProps
           }}
         >
           <div style={{ width: '50%', paddingRight: 8 }}>
-            <FeedSection key={`fy-${tab}-${refreshKey}`} items={fy} onTap={onTap} onLongPress={onLongPress} />
+            <FeedSection key={`fy-${tab}-${refreshKey}`} items={fy} onTap={onTap} onPlay={onPlay} onLongPress={onLongPress} />
           </div>
           <div style={{ width: '50%', paddingLeft: 8 }}>
             <FollowingFeed key={`fl-${tab}-${refreshKey}`} onTap={onTap} onLongPress={onLongPress} />
