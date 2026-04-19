@@ -14,5 +14,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
+    coverage: {
+      provider: 'v8',
+      include: ['lib/**/*.ts', 'components/**/*.tsx'],
+      exclude: ['lib/content.ts', 'lib/following-data.ts', 'lib/twitch-following.ts'],
+    },
   },
 });

@@ -23,6 +23,7 @@ export default function NotifDropdown({ open, onClose, onViewAll, onNotifTap }: 
       <div onClick={onClose} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
       <div
         role="dialog"
+        aria-modal="true"
         aria-label="Notifications"
         style={{
           position: 'absolute',

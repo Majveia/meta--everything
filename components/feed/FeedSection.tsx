@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useStore } from '@/lib/store';
 import { useScrollPastTracker } from '@/lib/traces';
 import { parseRelativeTimeMs } from '@/lib/constants';
@@ -68,8 +69,9 @@ export default function FeedSection({ items, onTap, onLongPress }: FeedSectionPr
   const recent = visible.filter((i) => i.type !== 'live' && i.time && !i.time.includes('d') && parseInt(i.time) < 7);
   const earlier = visible.filter((i) => !live.includes(i) && !recent.includes(i));
 
+  const [renderTs] = useState(() => Date.now());
   // Count items newer than last visit
-  const msSinceLastVisit = lastVisit > 0 ? Date.now() - lastVisit : 0;
+  const msSinceLastVisit = lastVisit > 0 ? renderTs - lastVisit : 0;
   const newCount = lastVisit > 0
     ? visible.filter((i) => parseRelativeTimeMs(i.time) < msSinceLastVisit).length
     : 0;

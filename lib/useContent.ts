@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { ContentItem } from './content';
 import { allContent, mockFyItems, mockFlItems, mockExItems } from './content';
 import type { PlatformSources } from './fetchers';
@@ -20,6 +20,7 @@ export interface ContentState {
 let cachedItems: ContentItem[] | null = null;
 let cachedSources: PlatformSources | null = null;
 let lastFetchTime = 0;
+let inflight: Promise<{ items: ContentItem[]; sources: PlatformSources }> | null = null;
 const STALE_TIME = 60_000; // 1 minute
 
 function mergeContent(apiItems: ContentItem[]): {
@@ -72,17 +73,18 @@ export function useContent(): ContentState {
     { youtube: 'unconfigured', twitch: 'unconfigured', x: 'unconfigured', substack: 'unconfigured', kick: 'unconfigured' }
   );
   const [loading, setLoading] = useState(true);
-  const fetchingRef = useRef(false);
 
   const doFetch = useCallback(async (force = false) => {
-    if (fetchingRef.current) return;
     if (!force && cachedItems && Date.now() - lastFetchTime < STALE_TIME) return;
 
-    fetchingRef.current = true;
     try {
-      const res = await fetch('/api/content');
-      if (!res.ok) throw new Error(`API ${res.status}`);
-      const json = await res.json();
+      if (!inflight) {
+        inflight = fetch('/api/content').then(async (res) => {
+          if (!res.ok) throw new Error(`API ${res.status}`);
+          return res.json();
+        });
+      }
+      const json = await inflight;
       cachedItems = json.items || [];
       cachedSources = json.sources || {};
       lastFetchTime = Date.now();
@@ -90,10 +92,9 @@ export function useContent(): ContentState {
       setSources(cachedSources!);
     } catch (e) {
       console.warn('[useContent] fetch failed, using mock data:', e);
-      // Keep existing cached data or fall back to empty (mock will fill in via mergeContent)
     } finally {
+      inflight = null;
       setLoading(false);
-      fetchingRef.current = false;
     }
   }, []);
 

@@ -57,9 +57,11 @@ export default function ActivityView({ onDetailOpen }: ActivityViewProps) {
     return m;
   }, [traces]);
 
+  const [renderTs] = useState(() => Date.now());
+
   const { yourActivity, intelligence } = useMemo(() => {
     const yourActivity: ActivityItem[] = [];
-    const now = Date.now();
+    const now = renderTs;
 
     // Likes
     for (const id of likedItems) {
