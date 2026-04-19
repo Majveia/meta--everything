@@ -58,11 +58,15 @@ function NewSinceDivider({ count, color, accent }: { count: number; color: strin
   );
 }
 
+const DENSITY_GAP: Record<string, number> = { compact: 8, default: 14, spacious: 20 };
+const DENSITY_MIN_COL: Record<string, string> = { compact: '240px', default: '280px', spacious: '320px' };
+
 export default function FeedSection({ items, onTap, onLongPress }: FeedSectionProps) {
   const p = useStore((s) => s.p);
   const hiddenItems = useStore((s) => s.hiddenItems);
   const toggleHidden = useStore((s) => s.toggleHidden);
   const lastVisit = useStore((s) => s.lastVisitTimestamp);
+  const density = useStore((s) => s.feedDensity);
   const visible = withTypeDelay(items.filter((i) => !hiddenItems.has(i.id)));
   const live = visible.filter((i) => i.type === 'live');
   const recent = visible.filter((i) => i.type !== 'live' && i.time && !i.time.includes('d') && parseInt(i.time) < 7);
@@ -76,8 +80,8 @@ export default function FeedSection({ items, onTap, onLongPress }: FeedSectionPr
 
   const gridStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min-col, 280px), 1fr))',
-    gap: 'var(--grid-gap, 14px)',
+    gridTemplateColumns: `repeat(auto-fill, minmax(var(--grid-min-col, ${DENSITY_MIN_COL[density]}), 1fr))`,
+    gap: DENSITY_GAP[density],
   };
 
   if (visible.length === 0) {

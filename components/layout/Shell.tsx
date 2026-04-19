@@ -14,6 +14,7 @@ import NotifDropdown from '@/components/overlays/NotifDropdown';
 import DetailSheet from '@/components/detail/DetailSheet';
 import ToastContainer from '@/components/atoms/Toast';
 import ContextMenu from '@/components/overlays/ContextMenu';
+import OnboardingModal from '@/components/overlays/OnboardingModal';
 
 type NavTab = 'home' | 'explore' | 'activity' | 'profile';
 
@@ -51,6 +52,8 @@ export default function Shell({ children }: ShellProps) {
   const [ctxMenu, setCtxMenu] = useState<{ item: ContentItem; x: number; y: number } | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const hasOnboarded = useStore((s) => s.hasOnboarded);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const shortcutsRef = useRef<HTMLDivElement>(null);
   useFocusTrap(shortcutsRef, shortcutsOpen);
   const toggleLike = useStore((s) => s.toggleLike);
@@ -74,7 +77,14 @@ export default function Shell({ children }: ShellProps) {
   }, []);
 
   // Defer initial render past hydration so Zustand store + content context settle
-  useEffect(() => { setLoading(false); }, []);
+  useEffect(() => {
+    setLoading(false);
+    // Show onboarding after a brief delay so the app feels alive first
+    if (!useStore.getState().hasOnboarded) {
+      const t = setTimeout(() => setShowOnboarding(true), 600);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   // Update document title per active view
   useEffect(() => {
@@ -227,6 +237,7 @@ export default function Shell({ children }: ShellProps) {
       />
 
       {/* Overlays */}
+      <OnboardingModal open={showOnboarding && !hasOnboarded} onComplete={() => setShowOnboarding(false)} />
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} onSelect={(item) => { setDetail(item); setCmdOpen(false); }} onNavigate={(tab) => { switchNav(tab as NavTab); setCmdOpen(false); }} />
       <DetailSheet item={detail} onClose={() => setDetail(null)} onSwitch={setDetail} />
 

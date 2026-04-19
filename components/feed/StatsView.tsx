@@ -190,7 +190,39 @@ export default function StatsView({ onBack }: StatsViewProps) {
         </motion.div>
       )}
 
-      {/* Taste Profile */}
+      {/* Engagement Depth */}
+      {signals.confidence >= 0.05 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.1, duration: 0.4, ease }}
+          style={{ background: p.card, border: `1px solid ${p.cardB}`, borderRadius: 14, padding: '18px 20px', marginTop: 16 }}
+        >
+          <span style={{ fontFamily: "'SF Mono', monospace", fontSize: 10, letterSpacing: '.1em', textTransform: 'uppercase', color: p.txM, display: 'block', marginBottom: 14 }}>
+            Engagement Depth
+          </span>
+          <div style={{ display: 'flex', gap: 14 }}>
+            {[
+              { label: 'Avg Dwell', value: `${Math.round(signals.engagementDepth.avgDwellMs / 1000)}s`, accent: accentColors.teal },
+              { label: 'Open Rate', value: `${Math.round(signals.engagementDepth.detailOpenRate * 100)}%`, accent: accentColors.amber },
+              { label: 'Like Rate', value: `${Math.round(signals.engagementDepth.likeRate * 100)}%`, accent: p.tc },
+            ].map((m, i) => (
+              <motion.div
+                key={m.label}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2 + i * 0.08, duration: 0.3, ease }}
+                style={{ flex: 1, padding: '10px 8px', borderRadius: 8, background: p.bgH, textAlign: 'center', borderLeft: `2px solid ${m.accent}` }}
+              >
+                <span style={{ fontFamily: "var(--font-serif), 'Instrument Serif', Georgia, serif", fontSize: 22, color: p.tx, display: 'block', letterSpacing: '-0.02em', lineHeight: 1 }}>{m.value}</span>
+                <span style={{ fontFamily: "'SF Mono', monospace", fontSize: 8, color: p.txM, letterSpacing: '.08em', textTransform: 'uppercase', marginTop: 6, display: 'block' }}>{m.label}</span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Topic Affinity Chart */}
       {signals.tagAffinities.size > 0 && signals.confidence >= 0.05 && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -199,40 +231,50 @@ export default function StatsView({ onBack }: StatsViewProps) {
           style={{ background: p.card, border: `1px solid ${p.cardB}`, borderRadius: 14, padding: '18px 20px', marginTop: 16 }}
         >
           <span style={{ fontFamily: "'SF Mono', monospace", fontSize: 10, letterSpacing: '.1em', textTransform: 'uppercase', color: p.txM, display: 'block', marginBottom: 14 }}>
-            Taste Profile
+            Topic Affinity
           </span>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {[...signals.tagAffinities.entries()]
+          {(() => {
+            const sorted = [...signals.tagAffinities.entries()]
               .filter(([, v]) => v > 0)
               .sort((a, b) => b[1] - a[1])
-              .slice(0, 8)
-              .map(([tag, aff], i) => {
-                const maxAff = Math.max(...[...signals.tagAffinities.values()].filter((v) => v > 0), 1);
-                const opacity = 0.4 + 0.6 * (aff / maxAff);
-                return (
-                  <motion.span
-                    key={tag}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1.4 + i * 0.06, duration: 0.3, ease }}
-                    style={{
-                      fontFamily: "'SF Mono', monospace",
-                      fontSize: 9,
-                      letterSpacing: '.06em',
-                      textTransform: 'uppercase',
-                      color: p.tc,
-                      opacity,
-                      background: `${p.tc}11`,
-                      border: `1px solid ${p.tc}22`,
-                      borderRadius: 8,
-                      padding: '5px 10px',
-                    }}
-                  >
-                    {tag}
-                  </motion.span>
-                );
-              })}
-          </div>
+              .slice(0, 8);
+            const maxAff = Math.max(...sorted.map(([, v]) => v), 1);
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {sorted.map(([tag, aff], i) => {
+                  const pct = aff / maxAff;
+                  const fatigue = signals.fatigueSignals.get(tag) || 0;
+                  const isFatigued = fatigue > 0.5;
+                  return (
+                    <motion.div
+                      key={tag}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 1.3 + i * 0.06, duration: 0.3, ease }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+                    >
+                      <span style={{ fontFamily: "'SF Mono', monospace", fontSize: 9, letterSpacing: '.06em', textTransform: 'uppercase', color: isFatigued ? accentColors.red : p.txS, width: 72, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tag}</span>
+                      <div style={{ flex: 1, height: 6, borderRadius: 3, background: p.bdrS, overflow: 'hidden', position: 'relative' }}>
+                        <motion.div
+                          initial={{ scaleX: 0 }}
+                          animate={{ scaleX: pct }}
+                          transition={{ delay: 1.4 + i * 0.06, duration: 0.6, ease }}
+                          style={{
+                            height: '100%',
+                            borderRadius: 3,
+                            transformOrigin: 'left',
+                            background: isFatigued ? `linear-gradient(90deg, ${accentColors.red}, ${p.tc})` : p.tc,
+                            opacity: isFatigued ? 0.6 : 0.9,
+                          }}
+                        />
+                      </div>
+                      <span style={{ fontFamily: "'SF Mono', monospace", fontSize: 9, color: p.txF, width: 28, textAlign: 'right' }}>{Math.round(pct * 100)}</span>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </motion.div>
       )}
 

@@ -10,6 +10,8 @@ export interface ContentState {
   fyItems: ContentItem[];
   flItems: ContentItem[];
   exItems: ContentItem[];
+  /** Full unsplit pool for harness ranking — every item available for For You */
+  rankablePool: ContentItem[];
   loading: boolean;
   sources: PlatformSources;
   refresh: () => void;
@@ -27,9 +29,10 @@ function mergeContent(apiItems: ContentItem[]): {
   fyItems: ContentItem[];
   flItems: ContentItem[];
   exItems: ContentItem[];
+  rankablePool: ContentItem[];
 } {
   if (apiItems.length === 0) {
-    return { allItems: allContent, fyItems: mockFyItems, flItems: mockFlItems, exItems: mockExItems };
+    return { allItems: allContent, fyItems: mockFyItems, flItems: mockFlItems, exItems: mockExItems, rankablePool: allContent };
   }
 
   // Dedup: API items take priority (prefixed IDs won't collide with mock '0'-'31')
@@ -61,6 +64,7 @@ function mergeContent(apiItems: ContentItem[]): {
     fyItems: fillPool(fyPool, mockFyItems, 8),
     flItems: fillPool(flPool, mockFlItems, 8),
     exItems: fillPool(exPool, mockExItems, 8),
+    rankablePool: merged,
   };
 }
 

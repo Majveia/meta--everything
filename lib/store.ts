@@ -53,6 +53,10 @@ interface AppState {
   setAvatarUrl: (url: string) => void;
   lastVisitTimestamp: number;
   updateLastVisit: () => void;
+  hasOnboarded: boolean;
+  setHasOnboarded: (v: boolean) => void;
+  feedDensity: 'compact' | 'default' | 'spacious';
+  setFeedDensity: (d: 'compact' | 'default' | 'spacious') => void;
 }
 
 export const useStore = create<AppState>()(
@@ -153,6 +157,10 @@ export const useStore = create<AppState>()(
       setAvatarUrl: (url: string) => set({ avatarUrl: url }),
       lastVisitTimestamp: 0,
       updateLastVisit: () => set({ lastVisitTimestamp: Date.now() }),
+      hasOnboarded: false,
+      setHasOnboarded: (v: boolean) => set({ hasOnboarded: v }),
+      feedDensity: 'default' as const,
+      setFeedDensity: (d: 'compact' | 'default' | 'spacious') => set({ feedDensity: d }),
     }),
     {
       name: 'meta-everything-storage',
@@ -174,6 +182,8 @@ export const useStore = create<AppState>()(
         detailReadPositions: state.detailReadPositions,
         avatarUrl: state.avatarUrl,
         lastVisitTimestamp: state.lastVisitTimestamp,
+        hasOnboarded: state.hasOnboarded,
+        feedDensity: state.feedDensity,
       }),
       merge: (persisted, current) => {
         const p = persisted as Record<string, unknown> | undefined;
@@ -199,6 +209,8 @@ export const useStore = create<AppState>()(
           detailReadPositions: (p.detailReadPositions && typeof p.detailReadPositions === 'object') ? (p.detailReadPositions as Record<string, number>) : {},
           avatarUrl: typeof p.avatarUrl === 'string' ? p.avatarUrl : '',
           lastVisitTimestamp: typeof p.lastVisitTimestamp === 'number' ? p.lastVisitTimestamp : 0,
+          hasOnboarded: typeof p.hasOnboarded === 'boolean' ? p.hasOnboarded : false,
+          feedDensity: (['compact', 'default', 'spacious'] as const).includes(p.feedDensity as 'compact' | 'default' | 'spacious') ? (p.feedDensity as 'compact' | 'default' | 'spacious') : 'default',
         };
       },
     }

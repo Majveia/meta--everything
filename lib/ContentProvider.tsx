@@ -9,6 +9,7 @@ const defaultState: ContentState = {
   fyItems: mockFyItems,
   flItems: mockFlItems,
   exItems: mockExItems,
+  rankablePool: allContent,
   loading: false,
   sources: { youtube: 'unconfigured', twitch: 'unconfigured', x: 'unconfigured', substack: 'unconfigured', kick: 'unconfigured' },
   refresh: () => {},

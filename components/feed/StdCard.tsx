@@ -19,11 +19,15 @@ interface StdCardProps {
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
+const DENSITY_THUMB: Record<string, number> = { compact: 100, default: 145, spacious: 200 };
+const DENSITY_PAD: Record<string, string> = { compact: '8px 14px 12px', default: '10px 18px 16px', spacious: '14px 22px 20px' };
+
 function StdCard({ item, onTap, onLongPress: onLP }: StdCardProps) {
   const p = useStore((s) => s.p);
   const toggleLike = useStore((s) => s.toggleLike);
   const hapticEnabled = useStore((s) => s.hapticEnabled);
   const viewed = useStore((s) => s.viewedItems.has(item.id));
+  const density = useStore((s) => s.feedDensity);
   const [hover, setHover] = useState(false);
   const [heartPop, setHeartPop] = useState(false);
   const tapCountRef = useRef(0);
@@ -105,7 +109,7 @@ function StdCard({ item, onTap, onLongPress: onLP }: StdCardProps) {
       )}
 
       <div onClick={handleThumbTap} style={{ position: 'relative' }}>
-        <Thumbnail platform={item.platform} h={145} hover={hover} videoId={item.videoId} channelId={item.channelId} />
+        <Thumbnail platform={item.platform} h={DENSITY_THUMB[density]} hover={hover} videoId={item.videoId} channelId={item.channelId} />
         <AnimatePresence>
           {heartPop && (
             <motion.div
@@ -125,7 +129,7 @@ function StdCard({ item, onTap, onLongPress: onLP }: StdCardProps) {
 
       {/* Dot-grid texture on content area */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '45%', backgroundImage: `radial-gradient(circle, var(--dotgrid-color) var(--dotgrid-dot), transparent var(--dotgrid-dot))`, backgroundSize: 'var(--dotgrid-size) var(--dotgrid-size)', opacity: hover ? 0.04 : 0.02, pointerEvents: 'none', transition: 'opacity .4s ease' }} />
-      <div style={{ padding: '10px 18px 16px' }}>
+      <div style={{ padding: DENSITY_PAD[density] }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 9 }}>
           {item.author && <Avatar name={item.author} color={ac} size={20} />}
           <PlatformIcon platform={item.platform} size={11} />

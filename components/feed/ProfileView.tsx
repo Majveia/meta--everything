@@ -27,6 +27,8 @@ export default function ProfileView({ onShowSaved, onShowStats }: ProfileViewPro
   const updateStreak = useStore((s) => s.updateStreak);
   const avatarUrl = useStore((s) => s.avatarUrl);
   const setAvatarUrl = useStore((s) => s.setAvatarUrl);
+  const feedDensity = useStore((s) => s.feedDensity);
+  const setFeedDensity = useStore((s) => s.setFeedDensity);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { updateStreak(); }, [updateStreak]);
@@ -98,8 +100,8 @@ export default function ProfileView({ onShowSaved, onShowStats }: ProfileViewPro
           { label: 'Notifications', value: notificationsEnabled, toggle: () => { toggleNotifications(); addToast(notificationsEnabled ? 'Notifications off' : 'Notifications on'); } },
           { label: 'Haptic feedback', value: hapticEnabled, toggle: () => { toggleHaptic(); addToast(hapticEnabled ? 'Haptics off' : 'Haptics on'); } },
           { label: 'UI sounds', value: soundEnabled, toggle: () => { toggleSound(); addToast(soundEnabled ? 'Sounds off' : 'Sounds on'); } },
-        ].map((s, i, a) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: i < a.length - 1 ? `1px solid ${p.bdrS}` : 'none' }}>
+        ].map((s, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: `1px solid ${p.bdrS}` }}>
             <span style={{ fontFamily: "var(--font-body), 'Outfit', sans-serif", fontSize: 14, color: p.tx }}>{s.label}</span>
             {/* Mechanical toggle — Nothing-style: square track, square thumb, inverted fill */}
             <div
@@ -128,6 +130,39 @@ export default function ProfileView({ onShowSaved, onShowStats }: ProfileViewPro
             </div>
           </div>
         ))}
+        {/* Feed density selector */}
+        <div style={{ padding: '14px 18px' }}>
+          <span style={{ fontFamily: "var(--font-body), 'Outfit', sans-serif", fontSize: 14, color: p.tx, display: 'block', marginBottom: 10 }}>Feed density</span>
+          <div style={{ display: 'flex', gap: 6, padding: 3, borderRadius: 8, background: p.bgS, border: `1px solid ${p.bdrS}` }}>
+            {(['compact', 'default', 'spacious'] as const).map((d) => {
+              const active = feedDensity === d;
+              return (
+                <button
+                  key={d}
+                  onClick={() => { setFeedDensity(d); addToast(`Density: ${d}`); }}
+                  style={{
+                    flex: 1,
+                    padding: '7px 0',
+                    borderRadius: 5,
+                    border: 'none',
+                    background: active ? p.card : 'transparent',
+                    color: active ? p.tx : p.txM,
+                    fontFamily: "'SF Mono', monospace",
+                    fontSize: 10,
+                    letterSpacing: '.06em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    transition: 'all .15s cubic-bezier(0.25, 0.1, 0.25, 1)',
+                    boxShadow: active ? p.sh : 'none',
+                    fontWeight: active ? 500 : 400,
+                  }}
+                >
+                  {d}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Connected Platforms */}

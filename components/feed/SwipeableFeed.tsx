@@ -12,6 +12,7 @@ import { collectSignals, evaluateStrategy, presentFeed, logStrategy } from '@/li
 import FeedSection from './FeedSection';
 import InsightBanner from './InsightBanner';
 import FollowingFeed from './FollowingFeed';
+import ContinueSection from './ContinueSection';
 
 interface SwipeableFeedProps {
   onTap: (item: ContentItem) => void;
@@ -127,21 +128,23 @@ export default function SwipeableFeed({ onTap, onLongPress }: SwipeableFeedProps
   const hiddenItems = useStore((s) => s.hiddenItems);
   const strategyVersion = useStore((s) => s.strategyVersion);
   const bumpStrategy = useStore((s) => s.bumpStrategy);
-  const { fyItems, flItems, allItems, refresh: refreshContent, lastFetchTime, sources } = useContentData();
+  const { fyItems, flItems, allItems, rankablePool, refresh: refreshContent, lastFetchTime, sources } = useContentData();
 
   // Harness pipeline: collect → evaluate → present
+  // For You uses the FULL rankable pool so the harness can truly personalize.
+  // Following uses its own curated list but still benefits from scoring.
   const { fy, fl, insights } = useMemo(() => {
     const traces = getTraces();
-    const signals = collectSignals(traces, likedItems, bookmarkedItems, viewedItems, hiddenItems, allItems);
-    const strategy = evaluateStrategy(signals, [...fyItems, ...flItems]);
-    logStrategy(signals, allItems);
+    const signals = collectSignals(traces, likedItems, bookmarkedItems, viewedItems, hiddenItems, rankablePool);
+    const strategy = evaluateStrategy(signals, rankablePool);
+    logStrategy(signals, rankablePool);
     return {
-      fy: presentFeed(fyItems, strategy, hiddenItems),
+      fy: presentFeed(rankablePool, strategy, hiddenItems),
       fl: presentFeed(flItems, strategy, hiddenItems),
       insights: strategy.insights,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [strategyVersion, likedItems.size, bookmarkedItems.size, hiddenItems.size, fyItems, flItems]);
+  }, [strategyVersion, likedItems.size, bookmarkedItems.size, hiddenItems.size, rankablePool, flItems]);
 
   const updateLastVisit = useStore((s) => s.updateLastVisit);
 
@@ -223,6 +226,9 @@ export default function SwipeableFeed({ onTap, onLongPress }: SwipeableFeedProps
               : ''}
         </span>
       </div>
+
+      {/* Continue where you left off */}
+      <ContinueSection pool={allItems} onTap={onTap} />
 
       {/* Harness insight banner */}
       <InsightBanner insights={insights} />

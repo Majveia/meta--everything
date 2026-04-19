@@ -19,11 +19,15 @@ interface LiveCardProps {
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
+const DENSITY_THUMB: Record<string, number> = { compact: 140, default: 195, spacious: 260 };
+const DENSITY_PAD: Record<string, string> = { compact: '10px 16px 14px', default: '12px 22px 18px', spacious: '16px 26px 22px' };
+
 function LiveCard({ item, onTap, onLongPress: onLP }: LiveCardProps) {
   const p = useStore((s) => s.p);
   const toggleLike = useStore((s) => s.toggleLike);
   const hapticEnabled = useStore((s) => s.hapticEnabled);
   const viewed = useStore((s) => s.viewedItems.has(item.id));
+  const density = useStore((s) => s.feedDensity);
   const [hover, setHover] = useState(false);
   const [heartPop, setHeartPop] = useState(false);
   const tapCountRef = useRef(0);
@@ -99,7 +103,7 @@ function LiveCard({ item, onTap, onLongPress: onLP }: LiveCardProps) {
       )}
 
       <div onClick={handleThumbTap} style={{ position: 'relative' }}>
-        <Thumbnail platform={item.platform} h={195} hover={hover} isLive videoId={item.videoId} channelId={item.channelId} />
+        <Thumbnail platform={item.platform} h={DENSITY_THUMB[density]} hover={hover} isLive videoId={item.videoId} channelId={item.channelId} />
         {/* Double-tap heart overlay */}
         <AnimatePresence>
           {heartPop && (
@@ -125,7 +129,7 @@ function LiveCard({ item, onTap, onLongPress: onLP }: LiveCardProps) {
       )}
       {/* Dot-grid texture on content area */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '45%', backgroundImage: `radial-gradient(circle, var(--dotgrid-color) var(--dotgrid-dot), transparent var(--dotgrid-dot))`, backgroundSize: 'var(--dotgrid-size) var(--dotgrid-size)', opacity: hover ? 0.04 : 0.02, pointerEvents: 'none', transition: 'opacity .4s ease' }} />
-      <div style={{ padding: '12px 22px 18px' }}>
+      <div style={{ padding: DENSITY_PAD[density] }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           {item.author && <Avatar name={item.author} color={ac} size={22} />}
           <PlatformIcon platform={item.platform} size={12} />
