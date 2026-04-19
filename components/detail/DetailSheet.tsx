@@ -1,36 +1,37 @@
 'use client';
 
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/lib/store';
 import { pushTrace } from '@/lib/traces';
 import { useFocusTrap } from '@/lib/useFocusTrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import { platformColors, E, EXIT_EASE } from '@/lib/constants';
 import { type ContentItem } from '@/lib/content';
-import { useContentData } from '@/lib/ContentProvider';
 import Thumbnail from '@/components/feed/Thumbnail';
 import PlatformIcon from '@/components/atoms/PlatformIcon';
 import Avatar from '@/components/atoms/Avatar';
 import EngagementRow from '@/components/interactive/EngagementRow';
 import CommentsSection from './CommentsSection';
+import LiveChatSection from './LiveChatSection';
 
 interface DetailSheetProps {
   item: ContentItem | null;
   onClose: () => void;
   onSwitch?: (item: ContentItem) => void;
+  autoPlay?: boolean;
 }
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-export default function DetailSheet({ item, onClose, onSwitch }: DetailSheetProps) {
+export default function DetailSheet({ item, onClose, onSwitch, autoPlay }: DetailSheetProps) {
   return (
     <AnimatePresence>
-      {item && <DetailSheetInner key={item.id} item={item} onClose={onClose} onSwitch={onSwitch} />}
+      {item && <DetailSheetInner key={item.id} item={item} onClose={onClose} onSwitch={onSwitch} autoPlay={autoPlay} />}
     </AnimatePresence>
   );
 }
 
-function DetailSheetInner({ item, onClose, onSwitch }: { item: ContentItem; onClose: () => void; onSwitch?: (item: ContentItem) => void }) {
+function DetailSheetInner({ item, onClose, onSwitch, autoPlay }: { item: ContentItem; onClose: () => void; onSwitch?: (item: ContentItem) => void; autoPlay?: boolean }) {
   const p = useStore((s) => s.p);
   const addToast = useStore((s) => s.addToast);
   const markViewed = useStore((s) => s.markViewed);
@@ -41,7 +42,8 @@ function DetailSheetInner({ item, onClose, onSwitch }: { item: ContentItem; onCl
   const openTs = useRef(0);
   const sheetRef = useRef<HTMLDivElement>(null);
   useFocusTrap(sheetRef, true);
-  const [playing, setPlaying] = useState(false);
+  const canPlayInit = !!(item.videoId || item.channelId);
+  const [playing, setPlaying] = useState(canPlayInit && (!!autoPlay || item.type === 'live'));
   const [readProgress, setReadProgress] = useState(savedProgress);
   const [expanded, setExpanded] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 640);
   const canPlay = !!(item.videoId || item.channelId);
@@ -81,15 +83,6 @@ function DetailSheetInner({ item, onClose, onSwitch }: { item: ContentItem; onCl
       pushTrace({ kind: 'detail_close', itemId: item.id });
     };
   }, [item.id, item.title, markViewed, saveDetailReadPosition]);
-
-  const { allItems } = useContentData();
-  const related = useMemo(() => {
-    if (!item.tags || item.tags.length === 0) return [];
-    const tagSet = new Set(item.tags);
-    return allItems
-      .filter((c) => c.id !== item.id && c.tags && c.tags.some((t) => tagSet.has(t)))
-      .slice(0, 3);
-  }, [allItems, item.id, item.tags]);
 
   return (
     <>
@@ -322,48 +315,14 @@ function DetailSheetInner({ item, onClose, onSwitch }: { item: ContentItem; onCl
           {/* Comments Section */}
           <CommentsSection itemId={item.id} videoId={item.videoId} commentCount={item.comments} />
 
-          {/* Related content */}
-          {related.length > 0 && (
-            <>
-              <div style={{ margin: '28px 0 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: "'SF Mono', monospace", fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: p.txM }}>
-                  <span style={{ opacity: 0.35 }}>[ </span>Related<span style={{ opacity: 0.35 }}> ]</span>
-                </span>
-                <div style={{ flex: 1, height: 1, backgroundImage: `radial-gradient(circle, ${p.txF} 0.5px, transparent 0.5px)`, backgroundSize: '6px 6px', backgroundRepeat: 'repeat-x', opacity: 0.3 }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {related.map((r) => (
-                  <div
-                    key={r.id}
-                    onClick={() => onSwitch?.(r)}
-                    style={{
-                      display: 'flex',
-                      gap: 12,
-                      alignItems: 'center',
-                      padding: '12px 14px',
-                      background: p.bgS,
-                      borderRadius: 10,
-                      border: `1px solid ${p.cardB}`,
-                      cursor: 'pointer',
-                      transition: `all .2s ${E}`,
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget).style.borderColor = platformColors[r.platform] + '20'; }}
-                    onMouseLeave={(e) => { (e.currentTarget).style.borderColor = p.cardB; }}
-                  >
-                    {r.author && <Avatar name={r.author} color={platformColors[r.platform]} size={28} />}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontFamily: "var(--font-serif), 'Instrument Serif', Georgia, serif", fontSize: 14, color: p.tx, display: 'block', lineHeight: 1.3, marginBottom: 2 }}>{r.title}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <PlatformIcon platform={r.platform} size={10} />
-                        <span style={{ fontFamily: "'SF Mono', monospace", fontSize: 8.5, color: platformColors[r.platform], letterSpacing: '.08em', textTransform: 'uppercase' }}>{r.platform}</span>
-                        {r.time && <span style={{ fontFamily: "'SF Mono', monospace", fontSize: 8.5, color: p.txF }}>&middot; {r.time}</span>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          {/* Live Chat */}
+          <LiveChatSection
+            platform={item.platform}
+            channelId={item.channelId}
+            videoId={item.videoId}
+            isLive={item.isLive || item.type === 'live'}
+            itemId={item.id}
+          />
         </div>
       </motion.div>
     </>

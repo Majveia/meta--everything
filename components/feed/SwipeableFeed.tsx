@@ -30,11 +30,11 @@ function FreshnessIndicator({ lastFetchTime, sources, color }: { lastFetchTime: 
 
 interface SwipeableFeedProps {
   onTap: (item: ContentItem) => void;
+  onPlay?: (item: ContentItem) => void;
   onLongPress?: (item: ContentItem, x: number, y: number) => void;
 }
 
-export default function SwipeableFeed({ onTap, onLongPress }: SwipeableFeedProps) {
-  const prefersReducedMotion = useReducedMotion();
+export default function SwipeableFeed({ onTap, onPlay, onLongPress }: SwipeableFeedProps) {
   const p = useStore((s) => s.p);
   const soundEnabled = useStore((s) => s.soundEnabled);
   const likedItems = useStore((s) => s.likedItems);
@@ -153,7 +153,17 @@ export default function SwipeableFeed({ onTap, onLongPress }: SwipeableFeedProps
     };
   }, [drag, onMove, onEnd]);
 
-  const tx = -tab * 50 + (dx / containerWidth) * 50;
+  const w = ref.current?.offsetWidth || 400;
+  const tx = -tab * 50 + (dx / w) * 50;
+  const soundEnabled = useStore((s) => s.soundEnabled);
+  const likedItems = useStore((s) => s.likedItems);
+  const bookmarkedItems = useStore((s) => s.bookmarkedItems);
+  const viewedItems = useStore((s) => s.viewedItems);
+  const hiddenItems = useStore((s) => s.hiddenItems);
+  const strategyVersion = useStore((s) => s.strategyVersion);
+  const bumpStrategy = useStore((s) => s.bumpStrategy);
+  const { fyItems, flItems, allItems, refresh: refreshContent, lastFetchTime, sources, fetchError } = useContentData();
+  const addToast = useStore((s) => s.addToast);
 
   // Harness pipeline: collect → evaluate → present
   const { fy, fl, insights } = useMemo(() => {
@@ -168,6 +178,10 @@ export default function SwipeableFeed({ onTap, onLongPress }: SwipeableFeedProps
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strategyVersion, likedItems.size, bookmarkedItems.size, hiddenItems.size, fyItems, flItems]);
+
+  useEffect(() => {
+    if (fetchError) addToast('Live data unavailable — showing sample content');
+  }, [fetchError, addToast]);
 
   const updateLastVisit = useStore((s) => s.updateLastVisit);
 
@@ -309,7 +323,7 @@ export default function SwipeableFeed({ onTap, onLongPress }: SwipeableFeedProps
           }}
         >
           <div style={{ width: '50%', paddingRight: 8 }}>
-            <FeedSection key={`fy-${tab}-${refreshKey}`} items={fy} onTap={onTap} onLongPress={onLongPress} />
+            <FeedSection key={`fy-${tab}-${refreshKey}`} items={fy} onTap={onTap} onPlay={onPlay} onLongPress={onLongPress} />
           </div>
           <div style={{ width: '50%', paddingLeft: 8 }}>
             <FollowingFeed key={`fl-${tab}-${refreshKey}`} onTap={onTap} onLongPress={onLongPress} />

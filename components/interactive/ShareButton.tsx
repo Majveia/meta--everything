@@ -17,10 +17,12 @@ export default function ShareButton({ title, subtitle, itemId, url }: ShareButto
   const p = useStore((s) => s.p);
   const addToast = useStore((s) => s.addToast);
   const soundEnabled = useStore((s) => s.soundEnabled);
+  const hapticEnabled = useStore((s) => s.hapticEnabled);
   const [pop, setPop] = useState(false);
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (hapticEnabled) navigator.vibrate?.(8);
     if (soundEnabled) playShare();
     setPop(true);
     setTimeout(() => setPop(false), 600);

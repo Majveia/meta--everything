@@ -14,6 +14,7 @@ export interface ContentState {
   sources: PlatformSources;
   refresh: () => void;
   lastFetchTime: number;
+  fetchError: string | null;
 }
 
 // Module-level cache to avoid re-fetching across re-renders
@@ -23,19 +24,29 @@ let lastFetchTime = 0;
 let inflight: Promise<{ items: ContentItem[]; sources: PlatformSources }> | null = null;
 const STALE_TIME = 60_000; // 1 minute
 
-function mergeContent(apiItems: ContentItem[]): {
+function mergeContent(apiItems: ContentItem[], sources?: PlatformSources): {
   allItems: ContentItem[];
   fyItems: ContentItem[];
   flItems: ContentItem[];
   exItems: ContentItem[];
 } {
+  // Filter out mock X posts when the X API isn't connected
+  const xUnconfigured = !sources || sources.x === 'unconfigured';
+  const stripMockX = (items: ContentItem[]) =>
+    xUnconfigured ? items.filter((i) => i.platform !== 'x') : items;
+
   if (apiItems.length === 0) {
-    return { allItems: allContent, fyItems: mockFyItems, flItems: mockFlItems, exItems: mockExItems };
+    return {
+      allItems: stripMockX(allContent),
+      fyItems: stripMockX(mockFyItems),
+      flItems: stripMockX(mockFlItems),
+      exItems: stripMockX(mockExItems),
+    };
   }
 
   // Dedup: API items take priority (prefixed IDs won't collide with mock '0'-'31')
   const idSet = new Set(apiItems.map((i) => i.id));
-  const mockFiltered = allContent.filter((i) => !idSet.has(i.id));
+  const mockFiltered = stripMockX(allContent.filter((i) => !idSet.has(i.id)));
   const merged = [...apiItems, ...mockFiltered];
 
   // Split API items into pools by type
@@ -59,9 +70,9 @@ function mergeContent(apiItems: ContentItem[]): {
 
   return {
     allItems: merged,
-    fyItems: fillPool(fyPool, mockFyItems, 8),
-    flItems: fillPool(flPool, mockFlItems, 8),
-    exItems: fillPool(exPool, mockExItems, 8),
+    fyItems: fillPool(fyPool, stripMockX(mockFyItems), 8),
+    flItems: fillPool(flPool, stripMockX(mockFlItems), 8),
+    exItems: fillPool(exPool, stripMockX(mockExItems), 8),
   };
 }
 
@@ -73,25 +84,27 @@ export function useContent(): ContentState {
     { youtube: 'unconfigured', twitch: 'unconfigured', x: 'unconfigured', substack: 'unconfigured', kick: 'unconfigured' }
   );
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const fetchingRef = useRef(false);
 
   const doFetch = useCallback(async (force = false) => {
     if (!force && cachedItems && Date.now() - lastFetchTime < STALE_TIME) return;
 
+    fetchingRef.current = true;
+    setFetchError(null);
     try {
-      if (!inflight) {
-        inflight = fetch('/api/content').then(async (res) => {
-          if (!res.ok) throw new Error(`API ${res.status}`);
-          return res.json();
-        });
-      }
-      const json = await inflight;
+      const res = await fetch('/api/content', { signal: AbortSignal.timeout(12000) });
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const json = await res.json();
       cachedItems = json.items || [];
       cachedSources = json.sources || {};
       lastFetchTime = Date.now();
       setItems(cachedItems!);
       setSources(cachedSources!);
     } catch (e) {
-      console.warn('[useContent] fetch failed, using mock data:', e);
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      console.warn('[useContent] fetch failed, using mock data:', msg);
+      setFetchError(msg);
     } finally {
       inflight = null;
       setLoading(false);
@@ -104,9 +117,12 @@ export function useContent(): ContentState {
       setItems(cachedItems);
       setSources(cachedSources!);
       setLoading(false);
-      return;
+    } else {
+      doFetch();
     }
-    doFetch();
+    // Poll every 30s to keep feeds dynamic and constantly refreshing
+    const interval = setInterval(() => doFetch(true), 30_000);
+    return () => clearInterval(interval);
   }, [doFetch]);
 
   const refresh = useCallback(async () => {
@@ -114,7 +130,7 @@ export function useContent(): ContentState {
     await doFetch(true);
   }, [doFetch]);
 
-  const merged = mergeContent(items);
+  const merged = mergeContent(items, sources);
 
   return {
     ...merged,
@@ -122,5 +138,6 @@ export function useContent(): ContentState {
     sources,
     refresh,
     lastFetchTime,
+    fetchError,
   };
 }

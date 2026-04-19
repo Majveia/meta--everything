@@ -23,6 +23,7 @@ interface ShellProps {
     activeTab: NavTab;
     loading: boolean;
     onDetailOpen: (item: ContentItem) => void;
+    onPlayOpen: (item: ContentItem) => void;
     onContextMenu: (item: ContentItem, x: number, y: number) => void;
     showSaved: boolean;
     showStats: boolean;
@@ -47,6 +48,7 @@ export default function Shell({ children }: ShellProps) {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [detail, setDetail] = useState<ContentItem | null>(null);
+  const [autoPlay, setAutoPlay] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ item: ContentItem; x: number; y: number } | null>(null);
@@ -229,7 +231,7 @@ export default function Shell({ children }: ShellProps) {
 
       {/* Overlays */}
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} onSelect={(item) => { setDetail(item); setCmdOpen(false); }} onNavigate={(tab) => { switchNav(tab as NavTab); setCmdOpen(false); }} />
-      <DetailSheet item={detail} onClose={() => setDetail(null)} onSwitch={setDetail} />
+      <DetailSheet item={detail} onClose={() => { setDetail(null); setAutoPlay(false); }} onSwitch={setDetail} autoPlay={autoPlay} />
 
       <Header
         onSearchOpen={() => setCmdOpen(true)}
@@ -258,7 +260,7 @@ export default function Shell({ children }: ShellProps) {
               animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } }}
               exit={{ opacity: 0, y: -10, transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] } }}
             >
-              {children({ activeTab, loading, onDetailOpen: setDetail, onContextMenu: (item, x, y) => setCtxMenu({ item, x, y }), showSaved, showStats, onShowSaved: () => setShowSaved(true), onShowStats: () => setShowStats(true), onBackFromSaved: () => setShowSaved(false), onBackFromStats: () => setShowStats(false) })}
+              {children({ activeTab, loading, onDetailOpen: setDetail, onPlayOpen: (item) => { setAutoPlay(true); setDetail(item); }, onContextMenu: (item, x, y) => setCtxMenu({ item, x, y }), showSaved, showStats, onShowSaved: () => setShowSaved(true), onShowStats: () => setShowStats(true), onBackFromSaved: () => setShowSaved(false), onBackFromStats: () => setShowStats(false) })}
             </motion.div>
           </AnimatePresence>
         )}

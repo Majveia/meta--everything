@@ -4,25 +4,29 @@ import { useState } from 'react';
 import { useStore } from '@/lib/store';
 import { useScrollPastTracker } from '@/lib/traces';
 import { parseRelativeTimeMs } from '@/lib/constants';
+import { useRef, useState, useEffect } from 'react';
 import SectionLabel from './SectionLabel';
 import LiveCard from './LiveCard';
 import StdCard from './StdCard';
 import CompactCard from './CompactCard';
 import type { ContentItem } from '@/lib/content';
 
+const PAGE_SIZE = 12;
+
 interface FeedSectionProps {
   items: ContentItem[];
   onTap: (item: ContentItem) => void;
+  onPlay?: (item: ContentItem) => void;
   onLongPress?: (item: ContentItem, x: number, y: number) => void;
 }
 
-function TrackedCard({ item, onTap, onLongPress }: { item: ContentItem; onTap: (item: ContentItem) => void; onLongPress?: (item: ContentItem, x: number, y: number) => void }) {
+function TrackedCard({ item, onTap, onPlay, onLongPress }: { item: ContentItem; onTap: (item: ContentItem) => void; onPlay?: (item: ContentItem) => void; onLongPress?: (item: ContentItem, x: number, y: number) => void }) {
   const ref = useScrollPastTracker(item.id);
   const card = item.type === 'live'
-    ? <LiveCard item={item} onTap={onTap} onLongPress={onLongPress} />
+    ? <LiveCard item={item} onTap={onTap} onPlay={onPlay} onLongPress={onLongPress} />
     : item.type === 'compact'
     ? <CompactCard item={item} onTap={onTap} onLongPress={onLongPress} />
-    : <StdCard item={item} onTap={onTap} onLongPress={onLongPress} />;
+    : <StdCard item={item} onTap={onTap} onPlay={onPlay} onLongPress={onLongPress} />;
   return (
     <div ref={ref} style={item.type === 'live' ? { gridColumn: '1 / -1' } : undefined}>
       {card}
@@ -42,8 +46,8 @@ function withTypeDelay(items: ContentItem[]): ContentItem[] {
   });
 }
 
-function renderCard(item: ContentItem, onTap: (item: ContentItem) => void, onLongPress?: (item: ContentItem, x: number, y: number) => void) {
-  return <TrackedCard key={item.id} item={item} onTap={onTap} onLongPress={onLongPress} />;
+function renderCard(item: ContentItem, onTap: (item: ContentItem) => void, onPlay?: (item: ContentItem) => void, onLongPress?: (item: ContentItem, x: number, y: number) => void) {
+  return <TrackedCard key={item.id} item={item} onTap={onTap} onPlay={onPlay} onLongPress={onLongPress} />;
 }
 
 function NewSinceDivider({ count, color, accent }: { count: number; color: string; accent: string }) {
@@ -59,21 +63,40 @@ function NewSinceDivider({ count, color, accent }: { count: number; color: strin
   );
 }
 
-export default function FeedSection({ items, onTap, onLongPress }: FeedSectionProps) {
+export default function FeedSection({ items, onTap, onPlay, onLongPress }: FeedSectionProps) {
   const p = useStore((s) => s.p);
   const hiddenItems = useStore((s) => s.hiddenItems);
   const toggleHidden = useStore((s) => s.toggleHidden);
   const lastVisit = useStore((s) => s.lastVisitTimestamp);
-  const visible = withTypeDelay(items.filter((i) => !hiddenItems.has(i.id)));
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Reset pagination when item list changes (tab switch / refresh)
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [items]);
+
+  // Observe sentinel — load next page when it enters viewport
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisibleCount((c) => c + PAGE_SIZE); },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const allVisible = withTypeDelay(items.filter((i) => !hiddenItems.has(i.id)));
+  const visible = allVisible.slice(0, visibleCount);
+  const hasMore = visibleCount < allVisible.length;
   const live = visible.filter((i) => i.type === 'live');
   const recent = visible.filter((i) => i.type !== 'live' && i.time && !i.time.includes('d') && parseInt(i.time) < 7);
   const earlier = visible.filter((i) => !live.includes(i) && !recent.includes(i));
 
-  const [renderTs] = useState(() => Date.now());
-  // Count items newer than last visit
-  const msSinceLastVisit = lastVisit > 0 ? renderTs - lastVisit : 0;
+  // Count items newer than last visit (from full set, not paginated slice)
+  const msSinceLastVisit = lastVisit > 0 ? Date.now() - lastVisit : 0;
   const newCount = lastVisit > 0
-    ? visible.filter((i) => parseRelativeTimeMs(i.time) < msSinceLastVisit).length
+    ? allVisible.filter((i) => parseRelativeTimeMs(i.time) < msSinceLastVisit).length
     : 0;
 
   const gridStyle: React.CSSProperties = {
@@ -82,7 +105,7 @@ export default function FeedSection({ items, onTap, onLongPress }: FeedSectionPr
     gap: 'var(--grid-gap, 14px)',
   };
 
-  if (visible.length === 0) {
+  if (allVisible.length === 0) {
     const hiddenCount = items.filter((i) => hiddenItems.has(i.id)).length;
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 20px', textAlign: 'center' }}>
@@ -113,20 +136,28 @@ export default function FeedSection({ items, onTap, onLongPress }: FeedSectionPr
       {recent.length > 0 && (
         <>
           <SectionLabel label="Recent" />
-          <div style={gridStyle}>{recent.map((f) => renderCard(f, onTap, onLongPress))}</div>
+          <div style={gridStyle}>{recent.map((f) => renderCard(f, onTap, onPlay, onLongPress))}</div>
         </>
       )}
       {live.length > 0 && (
         <>
           <SectionLabel label="Live Now" live />
-          <div style={gridStyle}>{live.map((f) => renderCard(f, onTap, onLongPress))}</div>
+          <div style={gridStyle}>{live.map((f) => renderCard(f, onTap, onPlay, onLongPress))}</div>
         </>
       )}
       {earlier.length > 0 && (
         <>
           <SectionLabel label="Earlier" />
-          <div style={gridStyle}>{earlier.map((f) => renderCard(f, onTap, onLongPress))}</div>
+          <div style={gridStyle}>{earlier.map((f) => renderCard(f, onTap, onPlay, onLongPress))}</div>
         </>
+      )}
+
+      {/* Infinite scroll sentinel */}
+      <div ref={sentinelRef} style={{ height: 1 }} />
+      {hasMore && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0 8px' }}>
+          <div style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${p.tc}`, borderTopColor: 'transparent', animation: 'ptr-spin .7s linear infinite', opacity: 0.5 }} />
+        </div>
       )}
     </div>
   );

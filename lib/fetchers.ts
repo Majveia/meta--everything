@@ -19,6 +19,9 @@ export interface FetchResult {
   error?: string;
 }
 
+/** Default timeout for all external API calls */
+const API_TIMEOUT = 8000;
+
 // ═══ YOUTUBE ═══
 
 export async function fetchYouTube(): Promise<FetchResult> {
@@ -27,7 +30,7 @@ export async function fetchYouTube(): Promise<FetchResult> {
 
   try {
     const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=US&maxResults=10&key=${key}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(API_TIMEOUT) });
     if (!res.ok) throw new Error(`YouTube API ${res.status}: ${res.statusText}`);
     const json = await res.json();
     return { items: transformYouTube(json), source: 'api' };
@@ -45,6 +48,7 @@ const TWITCH_USER = process.env.TWITCH_USERNAME;
 async function twitchGet(path: string, clientId: string, token: string) {
   const res = await fetch(`https://api.twitch.tv/helix/${path}`, {
     headers: { 'Authorization': `Bearer ${token}`, 'Client-ID': clientId },
+    signal: AbortSignal.timeout(API_TIMEOUT),
   });
   if (!res.ok) throw new Error(`Twitch ${path} ${res.status}: ${res.statusText}`);
   return res.json();
@@ -79,6 +83,7 @@ export async function fetchTwitch(): Promise<FetchResult> {
     try {
       const fallback = await fetch('https://api.twitch.tv/helix/streams?first=10', {
         headers: { 'Authorization': `Bearer ${token}`, 'Client-ID': clientId },
+        signal: AbortSignal.timeout(API_TIMEOUT),
       });
       if (fallback.ok) {
         const json = await fallback.json();
@@ -102,7 +107,7 @@ export async function fetchX(): Promise<FetchResult> {
     // Step 1: Look up user IDs from usernames
     const lookupRes = await fetch(
       `https://api.x.com/2/users/by?usernames=${accounts.join(',')}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(API_TIMEOUT) }
     );
     if (!lookupRes.ok) throw new Error(`X user lookup ${lookupRes.status}: ${lookupRes.statusText}`);
     const lookupJson = await lookupRes.json();
@@ -119,7 +124,7 @@ export async function fetchX(): Promise<FetchResult> {
         });
         const res = await fetch(
           `https://api.x.com/2/users/${user.id}/tweets?${params}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(API_TIMEOUT) }
         );
         if (!res.ok) return { data: [], includes: { users: [user] } };
         const json = await res.json();
@@ -160,6 +165,7 @@ export async function fetchSubstack(): Promise<FetchResult> {
       pubs.map(async (slug) => {
         const res = await fetch(`https://${slug}.substack.com/feed`, {
           headers: { 'Accept': 'application/rss+xml, application/xml, text/xml' },
+          signal: AbortSignal.timeout(API_TIMEOUT),
         });
         if (!res.ok) throw new Error(`Substack ${slug}: ${res.status}`);
         const buf = await res.arrayBuffer();
@@ -192,7 +198,9 @@ export async function fetchKick(): Promise<FetchResult> {
   try {
     const results = await Promise.allSettled(
       channels.map(async (slug) => {
-        const res = await fetch(`https://kick.com/api/v2/channels/${slug}`);
+        const res = await fetch(`https://kick.com/api/v2/channels/${slug}`, {
+          signal: AbortSignal.timeout(API_TIMEOUT),
+        });
         if (!res.ok) throw new Error(`Kick ${slug}: ${res.status}`);
         const json = await res.json();
         return transformKick(json, slug);

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStore } from '@/lib/store';
 import { E } from '@/lib/constants';
-import { notifications } from '@/lib/content';
+import { useContentData } from '@/lib/ContentProvider';
+import { generateNotifications } from '@/lib/notifications';
 
 interface NotifDropdownProps {
   open: boolean;
@@ -14,6 +15,8 @@ interface NotifDropdownProps {
 
 export default function NotifDropdown({ open, onClose, onViewAll, onNotifTap }: NotifDropdownProps) {
   const p = useStore((s) => s.p);
+  const { allItems } = useContentData();
+  const notifications = useMemo(() => generateNotifications(allItems), [allItems]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   if (!open) return null;
   const visible = notifications.filter((n) => !dismissed.has(n.id));

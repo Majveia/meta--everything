@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Instrument_Serif, Outfit } from 'next/font/google';
 import ErrorBoundary from '@/components/atoms/ErrorBoundary';
+import ServiceWorkerRegistrar from '@/components/atoms/ServiceWorkerRegistrar';
 import './globals.css';
 
 const instrumentSerif = Instrument_Serif({
@@ -65,6 +66,7 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
+        <ServiceWorkerRegistrar />
         <ErrorBoundary>{children}</ErrorBoundary>
       </body>
     </html>
