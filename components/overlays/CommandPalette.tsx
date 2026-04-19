@@ -171,6 +171,11 @@ export default function CommandPalette({ open, onClose, onSelect, onNavigate }: 
           )}
         </div>
 
+        {/* Screen reader result count */}
+        <div role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
+          {q.length > 1 ? `${results.length} result${results.length !== 1 ? 's' : ''} found` : ''}
+        </div>
+
         {/* Results */}
         <div ref={resultsRef} style={{ padding: 4, overflowY: 'auto', flex: 1 }}>
           {results.length > 0 && (

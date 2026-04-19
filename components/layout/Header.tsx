@@ -72,7 +72,7 @@ export default function Header({ onSearchOpen, onNotifToggle, notifOpen, onSwitc
               transition: 'font-size .3s ease',
             }}
           >
-            meta<span style={{ color: p.tc }}>//</span>everything
+            meta<span style={{ color: p.tc }}>{"//"}</span>everything
           </motion.h1>
         </div>
 

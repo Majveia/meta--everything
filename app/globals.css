@@ -230,14 +230,18 @@ body {
 
 /* ═══ KEYBOARD FOCUS ═══ */
 
-[data-card]:focus-visible {
-  outline: 2px solid rgba(191, 90, 60, 0.3);
+:focus-visible {
+  outline: 2px solid var(--terracotta, #BF5A3C);
   outline-offset: 2px;
-  border-radius: 14px;
 }
 
-[data-card]:focus:not(:focus-visible) {
+:focus:not(:focus-visible) {
   outline: none;
+}
+
+[data-card]:focus-visible {
+  outline-color: rgba(191, 90, 60, 0.3);
+  border-radius: 14px;
 }
 
 /* ═══ RESPONSIVE LAYOUT ═══ */

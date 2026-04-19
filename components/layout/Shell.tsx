@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { useFocusTrap } from '@/lib/useFocusTrap';
@@ -9,11 +10,11 @@ import Header from './Header';
 import BottomNav from './BottomNav';
 import { playTab } from '@/lib/sounds';
 import { SkeletonFeed } from '@/components/atoms/Skeleton';
-import CommandPalette from '@/components/overlays/CommandPalette';
-import NotifDropdown from '@/components/overlays/NotifDropdown';
-import DetailSheet from '@/components/detail/DetailSheet';
 import ToastContainer from '@/components/atoms/Toast';
-import ContextMenu from '@/components/overlays/ContextMenu';
+
+const CommandPalette = dynamic(() => import('@/components/overlays/CommandPalette'), { ssr: false });
+const DetailSheet = dynamic(() => import('@/components/detail/DetailSheet'), { ssr: false });
+const ContextMenu = dynamic(() => import('@/components/overlays/ContextMenu'), { ssr: false });
 
 type NavTab = 'home' | 'explore' | 'activity' | 'profile';
 

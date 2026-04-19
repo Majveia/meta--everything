@@ -39,7 +39,7 @@ function DetailSheetInner({ item, onClose, onSwitch, autoPlay }: { item: Content
   const savedProgress = useStore((s) => s.detailReadPositions[item.id] ?? 0);
   const ac = platformColors[item.platform];
 
-  const openTs = useRef(Date.now());
+  const openTs = useRef(0);
   const sheetRef = useRef<HTMLDivElement>(null);
   useFocusTrap(sheetRef, true);
   const canPlayInit = !!(item.videoId || item.channelId);
@@ -49,7 +49,7 @@ function DetailSheetInner({ item, onClose, onSwitch, autoPlay }: { item: Content
   const canPlay = !!(item.videoId || item.channelId);
 
   const readProgressRef = useRef(readProgress);
-  readProgressRef.current = readProgress;
+  useEffect(() => { readProgressRef.current = readProgress; }, [readProgress]);
 
   useEffect(() => {
     markViewed(item.id);

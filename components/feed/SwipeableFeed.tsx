@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { E, MECH_EASE } from '@/lib/constants';
 import { playTab } from '@/lib/sounds';
@@ -13,6 +13,21 @@ import FeedSection from './FeedSection';
 import InsightBanner from './InsightBanner';
 import FollowingFeed from './FollowingFeed';
 
+function FreshnessIndicator({ lastFetchTime, sources, color }: { lastFetchTime: number; sources: Record<string, string>; color: string }) {
+  const [now] = useState(() => Date.now());
+  const label = lastFetchTime > 0
+    ? `Updated ${Math.max(1, Math.round((now - lastFetchTime) / 60000))}m ago`
+    : Object.values(sources).every((s) => s === 'unconfigured')
+      ? 'Using sample data'
+      : '';
+  if (!label) return null;
+  return (
+    <div style={{ textAlign: 'center', marginBottom: 10 }}>
+      <span style={{ fontFamily: "'SF Mono', monospace", fontSize: 8.5, letterSpacing: '.06em', color }}>{label}</span>
+    </div>
+  );
+}
+
 interface SwipeableFeedProps {
   onTap: (item: ContentItem) => void;
   onPlay?: (item: ContentItem) => void;
@@ -21,12 +36,31 @@ interface SwipeableFeedProps {
 
 export default function SwipeableFeed({ onTap, onPlay, onLongPress }: SwipeableFeedProps) {
   const p = useStore((s) => s.p);
+  const soundEnabled = useStore((s) => s.soundEnabled);
+  const likedItems = useStore((s) => s.likedItems);
+  const bookmarkedItems = useStore((s) => s.bookmarkedItems);
+  const viewedItems = useStore((s) => s.viewedItems);
+  const hiddenItems = useStore((s) => s.hiddenItems);
+  const strategyVersion = useStore((s) => s.strategyVersion);
+  const bumpStrategy = useStore((s) => s.bumpStrategy);
+  const { fyItems, flItems, allItems, refresh: refreshContent, lastFetchTime, sources } = useContentData();
+
   const [tab, setTab] = useState(0);
   const [dx, setDx] = useState(0);
   const [drag, setDrag] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(400);
   const startX = useRef(0);
   const startTime = useRef(0);
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setContainerWidth(el.offsetWidth);
+    const obs = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width));
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   // Pull-to-refresh state
   const [pullY, setPullY] = useState(0);
@@ -79,7 +113,7 @@ export default function SwipeableFeed({ onTap, onPlay, onLongPress }: SwipeableF
       setPullY(0);
       setPulling(false);
     }
-  }, [pullY, pullThreshold]);
+  }, [pullY, pullThreshold, bumpStrategy, refreshContent]);
 
   const onStart = useCallback((x: number) => {
     startX.current = x;
@@ -105,7 +139,7 @@ export default function SwipeableFeed({ onTap, onPlay, onLongPress }: SwipeableF
     if (dx < -th && tab === 0) { if (soundEnabled) playTab(); setTab(1); }
     else if (dx > th && tab === 1) { if (soundEnabled) playTab(); setTab(0); }
     setDx(0);
-  }, [drag, dx, tab]);
+  }, [drag, dx, tab, soundEnabled]);
 
   useEffect(() => {
     if (!drag) return;
@@ -167,9 +201,9 @@ export default function SwipeableFeed({ onTap, onPlay, onLongPress }: SwipeableF
         {greeting.split(' ').map((word, i) => (
           <motion.span
             key={word + i}
-            initial={{ opacity: 0, filter: 'blur(12px)', y: 8 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, filter: 'blur(12px)', y: 8 }}
             animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
-            transition={{ delay: 0.2 + i * 0.15, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.2 + i * 0.15, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
             {word}
           </motion.span>
@@ -220,15 +254,7 @@ export default function SwipeableFeed({ onTap, onPlay, onLongPress }: SwipeableF
       </div>
 
       {/* Content freshness indicator */}
-      <div style={{ textAlign: 'center', marginBottom: 10 }}>
-        <span style={{ fontFamily: "'SF Mono', monospace", fontSize: 8.5, letterSpacing: '.06em', color: p.txF }}>
-          {lastFetchTime > 0
-            ? `Updated ${Math.max(1, Math.round((Date.now() - lastFetchTime) / 60000))}m ago`
-            : Object.values(sources).every((s) => s === 'unconfigured')
-              ? 'Using sample data'
-              : ''}
-        </span>
-      </div>
+      <FreshnessIndicator lastFetchTime={lastFetchTime} sources={sources} color={p.txF} />
 
       {/* Harness insight banner */}
       <InsightBanner insights={insights} />

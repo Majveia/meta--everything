@@ -43,7 +43,7 @@ export async function fetchYouTube(): Promise<FetchResult> {
 
 // ═══ TWITCH ═══
 
-const TWITCH_USER = process.env.TWITCH_USERNAME || 'majveia';
+const TWITCH_USER = process.env.TWITCH_USERNAME;
 
 async function twitchGet(path: string, clientId: string, token: string) {
   const res = await fetch(`https://api.twitch.tv/helix/${path}`, {
@@ -57,7 +57,7 @@ async function twitchGet(path: string, clientId: string, token: string) {
 export async function fetchTwitch(): Promise<FetchResult> {
   const clientId = process.env.TWITCH_CLIENT_ID;
   const token = process.env.TWITCH_ACCESS_TOKEN;
-  if (!clientId || !token) return { items: [], source: 'unconfigured' };
+  if (!clientId || !token || !TWITCH_USER) return { items: [], source: 'unconfigured' };
 
   try {
     // Step 1: Get user ID for majveia

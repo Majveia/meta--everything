@@ -42,7 +42,7 @@ interface YTVideo {
 }
 
 export function transformYouTube(json: { items?: YTVideo[] }): ContentItem[] {
-  if (!json?.items) return [];
+  if (!json?.items || !Array.isArray(json.items)) return [];
   return json.items.map((v) => ({
     id: `yt-${v.id}`,
     type: 'std' as const,
@@ -75,7 +75,7 @@ interface TwitchStream {
 }
 
 export function transformTwitch(json: { data?: TwitchStream[] }): ContentItem[] {
-  if (!json?.data) return [];
+  if (!json?.data || !Array.isArray(json.data)) return [];
   return json.data.map((s) => ({
     id: `tw-${s.id}`,
     type: 'live' as const,
@@ -115,7 +115,7 @@ interface XUser {
 export function transformX(
   json: { data?: XTweet[]; includes?: { users?: XUser[] } }
 ): ContentItem[] {
-  if (!json?.data) return [];
+  if (!json?.data || !Array.isArray(json.data)) return [];
   const userMap = new Map<string, XUser>();
   json.includes?.users?.forEach((u) => userMap.set(u.id, u));
 

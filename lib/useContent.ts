@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { ContentItem } from './content';
 import { allContent, mockFyItems, mockFlItems, mockExItems } from './content';
 import type { PlatformSources } from './fetchers';
@@ -21,6 +21,7 @@ export interface ContentState {
 let cachedItems: ContentItem[] | null = null;
 let cachedSources: PlatformSources | null = null;
 let lastFetchTime = 0;
+let inflight: Promise<{ items: ContentItem[]; sources: PlatformSources }> | null = null;
 const STALE_TIME = 60_000; // 1 minute
 
 function mergeContent(apiItems: ContentItem[], sources?: PlatformSources): {
@@ -87,7 +88,6 @@ export function useContent(): ContentState {
   const fetchingRef = useRef(false);
 
   const doFetch = useCallback(async (force = false) => {
-    if (fetchingRef.current) return;
     if (!force && cachedItems && Date.now() - lastFetchTime < STALE_TIME) return;
 
     fetchingRef.current = true;
@@ -106,8 +106,8 @@ export function useContent(): ContentState {
       console.warn('[useContent] fetch failed, using mock data:', msg);
       setFetchError(msg);
     } finally {
+      inflight = null;
       setLoading(false);
-      fetchingRef.current = false;
     }
   }, []);
 
